@@ -1,6 +1,7 @@
 import time
 import schedule
 
+db = None
 
 def inspect_folders():
     pass
@@ -18,4 +19,14 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+
+    import db_library
+    db_library.core = db_library.create_core('../db', 'reader.db')
+
+    import db_model as m
+    m.create_tables_model(db_library.core)
+
+
+
+
+
