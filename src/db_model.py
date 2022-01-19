@@ -1,5 +1,5 @@
 from peewee import *
-import db_library
+from db_library import *
 from datetime import datetime
 from time import time as timestamp
 
@@ -11,7 +11,7 @@ class Base(Model):
     date_creation = DateTimeField(default=datetime.now)
 
     class Meta:
-        database = db_library.core
+        database = core
 
 
 class MonitoringPoint(Base):

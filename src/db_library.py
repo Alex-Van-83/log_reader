@@ -1,11 +1,11 @@
 from os import path, mkdir
 from peewee import SqliteDatabase
 
-core = None
 
+directory = '../db'
+db_name = 'reader.db'
 
-def create_core(directory, db_name):
+if not path.isdir(directory):
+    mkdir(directory)
 
-    if not path.isdir(directory):
-        mkdir(directory)
-    return SqliteDatabase(f'{directory}/{db_name}')
+core = SqliteDatabase(f'{directory}/{db_name}')
