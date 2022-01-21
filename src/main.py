@@ -1,14 +1,7 @@
-import time
 import schedule
-from db_model import *
-
-
-def inspect_folders():
-
-    with core:
-        points = MonitoringPoint.select().where(MonitoringPoint.monitoring == True)
-        for point in points:
-            print(point.settings)
+from time import sleep
+from inspector_folders import inspect_folders
+from db_model import init_db
 
 
 def create_task_list():
@@ -19,14 +12,9 @@ def main():
     create_task_list()
     while True:
         schedule.run_pending()
-        time.sleep(1)
-
-
-def init_db():
-    create_tables_model(core)
+        sleep(1)
 
 
 if __name__ == '__main__':
     init_db()
-    # main()
-    inspect_folders()
+    main()

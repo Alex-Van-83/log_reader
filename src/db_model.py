@@ -28,16 +28,16 @@ class FileForProcessing(Base):
     basic_directory = ForeignKeyField(MonitoringPoint, null=False)
     directory = CharField(255)
     full_path = CharField()
-    size = IntegerField()
+    size = IntegerField(null=True)
 
-    timestamp_scheduled = TimestampField()
-    date_scheduled = DateTimeField()
+    timestamp_scheduled = TimestampField(null=True)
+    date_scheduled = DateTimeField(null=True)
 
-    timestamp_processed = TimestampField()
-    date_processed = DateTimeField()
+    timestamp_processed = TimestampField(null=True)
+    date_processed = DateTimeField(null=True)
 
-    timestamp_lost = TimestampField()
-    date_lost = DateTimeField()
+    timestamp_lost = TimestampField(null=True)
+    date_lost = DateTimeField(null=True)
 
     class Meta:
         db_table = 'FilesForProcessing'
@@ -48,3 +48,7 @@ class FileForProcessing(Base):
 
 def create_tables_model(db):
     db.create_tables([MonitoringPoint, FileForProcessing])
+
+
+def init_db():
+    create_tables_model(core)
