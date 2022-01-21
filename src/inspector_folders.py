@@ -29,7 +29,7 @@ def take_files(file_path, deep, mask, new_files, files_for_processing):
 
 def inspect_folders():
 
-    with core:
+    with core_db:
         points = MonitoringPoint.select(
                                         MonitoringPoint.id,
                                         MonitoringPoint.settings
@@ -42,10 +42,13 @@ def inspect_folders():
             files_for_processing = FileForProcessing.select(
                 FileForProcessing.full_path
             ).where(
-                FileForProcessing.basic_directory == MonitoringPoint.id
-                and
-                FileForProcessing.date_processed.is_null(True)
-                or FileForProcessing.date_scheduled.is_null(True)
+                (FileForProcessing.timestamp_lost == FileForProcessing.timestamp_created) # not losted
+                &
+                ((FileForProcessing.timestamp_scheduled == FileForProcessing.timestamp_created) # not scheduled
+                    |
+                 (FileForProcessing.timestamp_processed == FileForProcessing.timestamp_created)) # not processed
+                &
+                (FileForProcessing.basic_directory == point.id)
             )
             lost_files = []
             new_files = []
@@ -62,8 +65,6 @@ def inspect_folders():
             for new_files_for_processing in new_files:
                 new_files_for_processing['basic_directory_id'] = point.id
             if len(new_files):
-                print(datetime.now())
-                print(new_files)
                 FileForProcessing.insert_many(new_files).execute()
 
 
@@ -76,3 +77,6 @@ def add_monitoring_point():
                                     '"FILTER":"[0-9]{8}.log"}'
     new_monitoring_point.save()
 
+
+if __name__ == '__main__':
+    inspect_folders()

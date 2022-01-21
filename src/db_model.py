@@ -7,11 +7,11 @@ from time import time as timestamp
 class Base(Model):
     id = PrimaryKeyField(unique=True, index=True)
     description = CharField(255)
-    timestamp_creation = TimestampField(default=timestamp)
-    date_creation = DateTimeField(default=datetime.now)
+    timestamp_created = TimestampField(default=timestamp)
+    date_created = DateTimeField(default=datetime.now)
 
     class Meta:
-        database = core
+        database = core_db
 
 
 class MonitoringPoint(Base):
@@ -42,7 +42,7 @@ class FileForProcessing(Base):
     class Meta:
         db_table = 'FilesForProcessing'
         indexes = (
-                (('timestamp_lost', 'timestamp_scheduled', 'timestamp_processed', 'id'), True),
+                (('timestamp_lost', 'timestamp_scheduled', 'timestamp_processed', 'timestamp_created', 'id'), True),
                 )
 
 
@@ -51,4 +51,4 @@ def create_tables_model(db):
 
 
 def init_db():
-    create_tables_model(core)
+    create_tables_model(core_db)
