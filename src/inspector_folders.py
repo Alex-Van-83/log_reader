@@ -10,10 +10,16 @@ def take_files(file_path, deep, mask, new_files, files_for_processing):
             take_files(new_path, deep-1, mask, new_files, files_for_processing)
         elif os.path.isfile(new_path):
             if fs_object.find(mask):
+                file_info = os.stat(new_path)
                 if new_path in files_for_processing:
+                    FileForProcessing.update(size=round(file_info.st_size / 1024)) \
+                                     .where(
+                                            FileForProcessing.full_path == new_path
+                                        ) \
+                                    .execute()
+
                     files_for_processing.remove(new_path)
                 else:
-                    file_info = os.stat(new_path)
                     new_files.append({'full_path': new_path,
                                       'size': round(file_info.st_size / 1024),
                                       'description': str(fs_object),
