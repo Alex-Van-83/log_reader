@@ -42,7 +42,7 @@ class FileForProcessing(Base):
     class Meta:
         db_table = 'FilesForProcessing'
         indexes = (
-                (('timestamp_lost', 'timestamp_scheduled', 'timestamp_processed', 'timestamp_created', 'id'), True),
+                (('date_lost', 'date_scheduled', 'date_processed', 'date_created', 'id'), True),
                 )
 
 

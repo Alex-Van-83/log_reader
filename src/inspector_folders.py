@@ -42,11 +42,11 @@ def inspect_folders():
             files_for_processing = FileForProcessing.select(
                 FileForProcessing.full_path
             ).where(
-                (FileForProcessing.timestamp_lost == FileForProcessing.timestamp_created) # not losted
+                (FileForProcessing.date_lost.is_null(True)) # not losted
                 &
-                ((FileForProcessing.timestamp_scheduled == FileForProcessing.timestamp_created) # not scheduled
+                ((FileForProcessing.date_scheduled.is_null(True)) # not scheduled
                     |
-                 (FileForProcessing.timestamp_processed == FileForProcessing.timestamp_created)) # not processed
+                 (FileForProcessing.date_processed.is_null(True))) # not processed
                 &
                 (FileForProcessing.basic_directory == point.id)
             )
@@ -79,4 +79,4 @@ def add_monitoring_point():
 
 
 if __name__ == '__main__':
-    inspect_folders()
+    add_monitoring_point()
