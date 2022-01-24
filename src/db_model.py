@@ -14,6 +14,12 @@ class Base(Model):
         database = core_db
 
 
+class BaseTask(Base):
+    completed = BooleanField(index=True, default=0)
+    timestamp_completed = TimestampField(null=True)
+    date_completed = DateTimeField(null=True)
+
+
 class MonitoringPoint(Base):
     points_type = CharField(32, default='FILE_DIRECTORY')
     monitoring = BooleanField(index=True, default=False)
@@ -29,6 +35,8 @@ class FileForProcessing(Base):
     directory = CharField(255)
     full_path = CharField()
     size = IntegerField(null=True)
+    last_position = IntegerField()
+    completed = BooleanField()
 
     timestamp_scheduled = TimestampField(null=True)
     date_scheduled = DateTimeField(null=True)
@@ -46,9 +54,24 @@ class FileForProcessing(Base):
                 )
 
 
+class TaskForProcessingFile(BaseTask):
+
+    file = ForeignKeyField(FileForProcessing, null=False)
+    start_position = IntegerField(null=False, default=0)
+    current_position = IntegerField(null=False, default=0)
+    max_offset = IntegerField(null=False, default=0)
+
+    class Meta:
+        db_table = 'TasksForProcessingFile'
+
+
 def create_tables_model(db):
-    db.create_tables([MonitoringPoint, FileForProcessing])
+    db.create_tables([MonitoringPoint, FileForProcessing, TaskForProcessingFile])
 
 
 def init_db():
     create_tables_model(core_db)
+
+
+if __name__ == '__main__':
+    init_db()

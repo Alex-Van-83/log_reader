@@ -3,6 +3,22 @@ import json
 from db_model import *
 
 
+def file_is_completed(filename):
+    try:
+        os.rename(filename,filename)
+        return False
+    except:
+        return True
+
+
+def file_last_position(filename):
+    try:
+        with open(filename, 'a', encoding='utf-8') as file_handler:
+            return file_handler.tell()
+    except:
+        return 0
+
+
 def take_files(file_path, deep, mask, new_files, files_for_processing):
     for fs_object in os.listdir(file_path):
         new_path = os.path.join(file_path, fs_object)
@@ -23,7 +39,9 @@ def take_files(file_path, deep, mask, new_files, files_for_processing):
                     new_files.append({'full_path': new_path,
                                       'size': round(file_info.st_size / 1024),
                                       'description': str(fs_object),
-                                      'directory': os.path.split(file_path)[-1]
+                                      'directory': os.path.split(file_path)[-1],
+                                      'last_position': file_last_position(new_path),
+                                      'completed': file_is_completed(new_path)
                                       })
 
 
