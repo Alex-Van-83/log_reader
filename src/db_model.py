@@ -14,12 +14,6 @@ class Base(Model):
         database = core_db
 
 
-class BaseTask(Base):
-    completed = BooleanField(index=True, default=0)
-    timestamp_completed = TimestampField(null=True)
-    date_completed = DateTimeField(null=True)
-
-
 class MonitoringPoint(Base):
     points_type = CharField(32, default='FILE_DIRECTORY')
     monitoring = BooleanField(index=True, default=False)
@@ -54,11 +48,10 @@ class FileForProcessing(Base):
                 )
 
 
-class TaskForProcessingFile(BaseTask):
+class TaskForProcessingFile(Base):
 
     file = ForeignKeyField(FileForProcessing, null=False)
     start_position = IntegerField(null=False, default=0)
-    current_position = IntegerField(null=False, default=0)
     max_offset = IntegerField(null=False, default=0)
 
     class Meta:
