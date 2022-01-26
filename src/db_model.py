@@ -18,6 +18,7 @@ class BaseTask(Base):
     completed = BooleanField(index=True, default=0)
     timestamp_completed = TimestampField(null=True)
     date_completed = DateTimeField(null=True)
+    executor = IntegerField(default=0)
 
 
 class MonitoringPoint(Base):

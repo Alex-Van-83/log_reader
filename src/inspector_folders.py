@@ -5,10 +5,10 @@ from db_model import *
 
 def file_is_completed(filename):
     try:
-        os.rename(filename,filename)
-        return False
-    except:
+        os.rename(filename, filename)
         return True
+    except:
+        return False
 
 
 def file_last_position(filename):
@@ -28,7 +28,9 @@ def take_files(file_path, deep, mask, new_files, files_for_processing):
             if fs_object.find(mask):
                 file_info = os.stat(new_path)
                 if new_path in files_for_processing:
-                    FileForProcessing.update(size=round(file_info.st_size / 1024)) \
+                    FileForProcessing.update(size=round(file_info.st_size / 1024),
+                                             last_position=file_last_position(new_path),
+                                             completed=file_is_completed(new_path)) \
                                      .where(
                                             FileForProcessing.full_path == new_path
                                         ) \
@@ -86,6 +88,29 @@ def inspect_folders():
                 FileForProcessing.insert_many(new_files).execute()
 
 
+def create_task_for_read_file():
+    with core_db:
+        file_without_task = FileForProcessing.select(
+                                                    FileForProcessing.id,
+                                                    FileForProcessing.description
+                                            ).join(TaskForProcessingFile,
+                                                    JOIN.LEFT_OUTER,
+                                                    on=(FileForProcessing.id == TaskForProcessingFile.file)
+                                            ).where(
+                                                    (FileForProcessing.completed==True)
+                                                    &
+                                                    (FileForProcessing.date_lost.is_null(True))
+                                                    &
+                                                    (TaskForProcessingFile.id.is_null(True))
+                                            )
+        new_tasks = []
+        for file_info in file_without_task:
+            new_tasks.append({'file': file_info.id,
+                             'description': file_info.description})
+        if len(new_tasks):
+            TaskForProcessingFile.insert_many(new_tasks).execute()
+
+
 def add_monitoring_point():
     new_monitoring_point = MonitoringPoint()
     new_monitoring_point.description = 'логи тех. журнала 1с'
@@ -97,4 +122,4 @@ def add_monitoring_point():
 
 
 if __name__ == '__main__':
-    add_monitoring_point()
+    create_task_for_read_file()
