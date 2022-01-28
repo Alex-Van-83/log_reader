@@ -7,7 +7,7 @@ def file_is_completed(filename):
     try:
         os.rename(filename, filename)
         return True
-    except:
+    except [FileExistsError, IsADirectoryError, NotADirectoryError]:
         return False
 
 
@@ -15,7 +15,7 @@ def file_last_position(filename):
     try:
         with open(filename, 'a', encoding='utf-8') as file_handler:
             return file_handler.tell()
-    except:
+    except FileNotFoundError:
         return 0
 
 
@@ -54,7 +54,7 @@ def inspect_folders():
             MonitoringPoint.settings
         ) \
             .where(
-            MonitoringPoint.monitoring == True
+            MonitoringPoint.monitoring is True
         )
         for point in points:
             settings = json.loads(point.settings)
@@ -89,21 +89,20 @@ def inspect_folders():
 
 def create_task_for_read_file():
     with core_db:
-        file_without_task = FileForProcessing.select(
-                                                    FileForProcessing.id,
-                                                    FileForProcessing.description,
-                                                    FileForProcessing.completed,
-                                                    FileForProcessing.last_position
-                                            ).join(TaskForProcessingFile,
-                                                   JOIN.LEFT_OUTER,
-                                                   on=(FileForProcessing.id == TaskForProcessingFile.file)
-                                            ).where(
-                                                (FileForProcessing.completed == True)
-                                                &
-                                                (FileForProcessing.date_lost.is_null(True))
-                                                &
-                                                (TaskForProcessingFile.id.is_null(True))
-                                            )
+        file_without_task = FileForProcessing\
+            .select(
+                    FileForProcessing.id,
+                    FileForProcessing.description,
+                    FileForProcessing.completed,
+                    FileForProcessing.last_position)\
+            .join(TaskForProcessingFile, JOIN.LEFT_OUTER, on=(FileForProcessing.id == TaskForProcessingFile.file))\
+            .where(
+                (FileForProcessing.completed is True)
+                &
+                (FileForProcessing.date_lost.is_null(True))
+                &
+                (TaskForProcessingFile.id.is_null(True))
+            )
         new_tasks = []
         for file_info in file_without_task:
             new_tasks.append({'file': file_info.id,
@@ -117,12 +116,10 @@ def start_read_file_by_task():
     query = Select(columns=[FileForProcessing.full_path,
                             TaskForProcessingFile.id,
                             TaskForProcessingFile.start_position,
-                            TaskForProcessingFile.max_offset]
-           ).from_(TaskForProcessingFile
-           ).join(FileForProcessing,
-                  JOIN.LEFT_OUTER,
-                  on=(TaskForProcessingFile.file == FileForProcessing.id)
-           ).where(FileForProcessing.date_lost.is_null(True))
+                            TaskForProcessingFile.max_offset])\
+        .from_(TaskForProcessingFile)\
+        .join(FileForProcessing, JOIN.LEFT_OUTER, on=(TaskForProcessingFile.file == FileForProcessing.id))\
+        .where(FileForProcessing.date_lost.is_null(True))
 
     selection = query.execute(core_db)
 
@@ -141,4 +138,4 @@ def add_monitoring_point():
 
 
 if __name__ == '__main__':
-    start_read_file_by_task()
+    inspect_folders()
