@@ -20,13 +20,13 @@ def file_last_position(filename):
 
 
 def take_files(file_path, deep, mask, new_files, files_for_processing):
-    for fs_object in os.listdir(file_path):
-        new_path = os.path.join(file_path, fs_object)
-        if os.path.isdir(new_path) and deep:
-            take_files(new_path, deep-1, mask, new_files, files_for_processing)
-        elif os.path.isfile(new_path):
-            if fs_object.find(mask):
-                file_info = os.stat(new_path)
+    for fs_object in os.scandir(file_path):
+        new_path = os.path.abspath(fs_object.path)
+        if fs_object.is_dir() and deep:
+            take_files(new_path, deep - 1, mask, new_files, files_for_processing)
+        elif fs_object.is_file():
+            if fs_object.name.find(mask):
+                file_info = fs_object.stat()
                 if new_path in files_for_processing:
                     FileForProcessing.update(size=round(file_info.st_size / 1024),
                                              last_position=file_last_position(new_path),
@@ -40,7 +40,7 @@ def take_files(file_path, deep, mask, new_files, files_for_processing):
                 else:
                     new_files.append({'full_path': new_path,
                                       'size': round(file_info.st_size / 1024),
-                                      'description': str(fs_object),
+                                      'description': fs_object.name,
                                       'directory': os.path.split(file_path)[-1],
                                       'last_position': file_last_position(new_path),
                                       'completed': file_is_completed(new_path)
@@ -48,25 +48,24 @@ def take_files(file_path, deep, mask, new_files, files_for_processing):
 
 
 def inspect_folders():
-
     with core_db:
         points = MonitoringPoint.select(
-                                        MonitoringPoint.id,
-                                        MonitoringPoint.settings
-                                        )\
-                                .where(
-                                        MonitoringPoint.monitoring == True
-                                      )
+            MonitoringPoint.id,
+            MonitoringPoint.settings
+        ) \
+            .where(
+            MonitoringPoint.monitoring == True
+        )
         for point in points:
             settings = json.loads(point.settings)
             files_for_processing = FileForProcessing.select(
                 FileForProcessing.full_path
             ).where(
-                (FileForProcessing.date_lost.is_null(True)) # not losted
+                (FileForProcessing.date_lost.is_null(True))  # not losted
                 &
-                ((FileForProcessing.date_scheduled.is_null(True)) # not scheduled
-                    |
-                 (FileForProcessing.date_processed.is_null(True))) # not processed
+                ((FileForProcessing.date_scheduled.is_null(True))  # not scheduled
+                 |
+                 (FileForProcessing.date_processed.is_null(True)))  # not processed
                 &
                 (FileForProcessing.basic_directory == point.id)
             )
@@ -78,10 +77,10 @@ def inspect_folders():
             for lost_file in lost_files:
                 FileForProcessing.update(timestamp_lost=timestamp(),
                                          date_lost=datetime.now()) \
-                                 .where(
-                                        FileForProcessing.full_path == lost_file
-                                        ) \
-                                 .execute()
+                    .where(
+                    FileForProcessing.full_path == lost_file
+                ) \
+                    .execute()
             for new_files_for_processing in new_files:
                 new_files_for_processing['basic_directory_id'] = point.id
             if len(new_files):
@@ -92,23 +91,43 @@ def create_task_for_read_file():
     with core_db:
         file_without_task = FileForProcessing.select(
                                                     FileForProcessing.id,
-                                                    FileForProcessing.description
+                                                    FileForProcessing.description,
+                                                    FileForProcessing.completed,
+                                                    FileForProcessing.last_position
                                             ).join(TaskForProcessingFile,
-                                                    JOIN.LEFT_OUTER,
-                                                    on=(FileForProcessing.id == TaskForProcessingFile.file)
+                                                   JOIN.LEFT_OUTER,
+                                                   on=(FileForProcessing.id == TaskForProcessingFile.file)
                                             ).where(
-                                                    (FileForProcessing.completed==True)
-                                                    &
-                                                    (FileForProcessing.date_lost.is_null(True))
-                                                    &
-                                                    (TaskForProcessingFile.id.is_null(True))
+                                                (FileForProcessing.completed == True)
+                                                &
+                                                (FileForProcessing.date_lost.is_null(True))
+                                                &
+                                                (TaskForProcessingFile.id.is_null(True))
                                             )
         new_tasks = []
         for file_info in file_without_task:
             new_tasks.append({'file': file_info.id,
-                             'description': file_info.description})
+                              'description': f' {file_info.description}'})
         if len(new_tasks):
             TaskForProcessingFile.insert_many(new_tasks).execute()
+
+
+def start_read_file_by_task():
+
+    query = Select(columns=[FileForProcessing.full_path,
+                            TaskForProcessingFile.id,
+                            TaskForProcessingFile.start_position,
+                            TaskForProcessingFile.max_offset]
+           ).from_(TaskForProcessingFile
+           ).join(FileForProcessing,
+                  JOIN.LEFT_OUTER,
+                  on=(TaskForProcessingFile.file == FileForProcessing.id)
+           ).where(FileForProcessing.date_lost.is_null(True))
+
+    selection = query.execute(core_db)
+
+    for part_file in selection:
+        print(part_file)
 
 
 def add_monitoring_point():
@@ -122,4 +141,4 @@ def add_monitoring_point():
 
 
 if __name__ == '__main__':
-    create_task_for_read_file()
+    start_read_file_by_task()
