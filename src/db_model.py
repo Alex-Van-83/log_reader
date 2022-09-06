@@ -6,7 +6,6 @@ from time import time as timestamp
 
 class Base(Model):
     id = PrimaryKeyField(unique=True, index=True)
-    description = CharField(255)
     timestamp_created = TimestampField(default=timestamp)
     date_created = DateTimeField(default=datetime.now)
 
@@ -15,6 +14,8 @@ class Base(Model):
 
 
 class MonitoringPoint(Base):
+
+    description = CharField(255)
     points_type = CharField(32, default='FILE_DIRECTORY')
     monitoring = BooleanField(index=True, default=False)
     settings = TextField(default='')
@@ -25,18 +26,13 @@ class MonitoringPoint(Base):
 
 class FileForProcessing(Base):
 
-    basic_directory = ForeignKeyField(MonitoringPoint, null=False)
-    directory = CharField(255)
+    monitoring_point = ForeignKeyField(MonitoringPoint, null=False)
     full_path = CharField()
+    directory = CharField(255)
+    file_name = CharField(255)
     size = IntegerField(null=True)
     last_position = IntegerField()
     completed = BooleanField()
-
-    timestamp_scheduled = TimestampField(null=True)
-    date_scheduled = DateTimeField(null=True)
-
-    timestamp_processed = TimestampField(null=True)
-    date_processed = DateTimeField(null=True)
 
     timestamp_lost = TimestampField(null=True)
     date_lost = DateTimeField(null=True)
@@ -44,7 +40,7 @@ class FileForProcessing(Base):
     class Meta:
         db_table = 'FilesForProcessing'
         indexes = (
-                (('date_lost', 'date_scheduled', 'date_processed', 'date_created', 'id'), True),
+                (('date_lost', 'id'), True),
                 )
 
 
@@ -58,8 +54,48 @@ class TaskForProcessingFile(Base):
         db_table = 'TasksForProcessingFile'
 
 
+class StartPointReadPartFile(Base):
+
+    file = ForeignKeyField(FileForProcessing, null=False)
+    task = ForeignKeyField(TaskForProcessingFile, null=False)
+    start_position = IntegerField(null=False, default=0)
+    executor = IntegerField(null=False)
+
+    class Meta:
+        db_table = 'StartPoints'
+
+
+class ReadPartFile(Base):
+
+    file = ForeignKeyField(FileForProcessing, null=False)
+    task = ForeignKeyField(TaskForProcessingFile, null=False)
+    start_position = IntegerField(null=False, default=0)
+    end_position = IntegerField(null=False, default=0)
+    executor = IntegerField(null=False)
+    row_count = IntegerField(null=False, default=0)
+    event_count = IntegerField(null=False, default=0)
+    duration = IntegerField(null=False, default=0)
+
+    class Meta:
+        db_table = 'ReadPartsFile'
+#
+#
+# class ProcessedPartFile(Base):
+#
+#     file = ForeignKeyField(FileForProcessing, null=False)
+#     task = ForeignKeyField(TaskForProcessingFile, null=False)
+#     reader = ForeignKeyField(ReadPartFile, null=False)
+#     executor = IntegerField(null=False)
+#     event_count = IntegerField(null=False, default=0)
+#     duration = IntegerField(null=False, default=0)
+#
+#     class Meta:
+#         db_table = 'ProcessedReadPartsFile'
+
+
+
 def create_tables_model(db):
-    db.create_tables([MonitoringPoint, FileForProcessing, TaskForProcessingFile])
+    db.create_tables([MonitoringPoint, FileForProcessing, TaskForProcessingFile, ReadPartFile])#, ProcessedPartFile
 
 
 def init_db():

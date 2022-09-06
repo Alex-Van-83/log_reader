@@ -2,6 +2,7 @@
 /config/
 /log/
 /db/
+/log/
 /.idea/
 __pycache__/
 *.py[cod]
